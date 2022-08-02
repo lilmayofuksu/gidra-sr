@@ -1,40 +1,34 @@
-from gidra.plugins import (change_account, change_nickname,
-                            commands, windseed_blocker)
-
 import requests
-from gidra.proxy import GenshinProxy
+from gidra.proxy import StarRailProxy
 from bottle import route, run, request
-from gidra.proto import QueryCurrRegionHttpRsp
-import ec2b, base64
+from gidra.proto import Gateserver
+import base64
 
-@route('/query_cur_region')
-def handle_query_cur():
-    # Trick to bypass system proxy, this way we don't need to hardcode ec2b key
+PROXY_GATEWAY = ('127.0.0.1', 8888)
+
+TARGET_DISPATCH_URL = 'https://127.0.0.1/query_gateway'
+TARGET_GATEWAY = ('127.0.0.1', 22102)
+
+@route('/query_gateway')
+def handle_query_gateway():
+    # Trick to bypass system proxy.
     session = requests.Session()
     session.trust_env = False
 
-    r = session.get(f'https://oseurodispatch.yuanshen.com/query_cur_region?{request.query_string}')
+    r = session.get(f'{TARGET_DISPATCH_URL}?{request.query_string}')
 
-    proto = QueryCurrRegionHttpRsp()
+    proto = Gateserver()
     proto.parse(base64.b64decode(r.text))
 
     if proto.retcode == 0:
-        proto.region_info.gateserver_ip = '127.0.0.1'
-        proto.region_info.gateserver_port = 8888
-        proxy.key = ec2b.derive(proto.client_secret_key)
+        proto.ip, proto.port = PROXY_GATEWAY
 
     return base64.b64encode(bytes(proto)).decode()
 
-proxy = GenshinProxy(('127.0.0.1', 8888), ('47.245.143.151', 22102))
+proxy = StarRailProxy(PROXY_GATEWAY, TARGET_GATEWAY)
 
 def main():
-    proxy.add(change_account.router)
-    proxy.add(change_nickname.router)
-    proxy.add(windseed_blocker.router)
-    proxy.add(commands.router)
-
     proxy.start()
-
     run(host='127.0.0.1', port=8081, debug=False)
 
 if __name__ == '__main__':

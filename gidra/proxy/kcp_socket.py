@@ -54,7 +54,7 @@ class KcpSocket:
         hs2 = Handshake.parse(data)
         logger.debug('[S] handshake received')
 
-        if (hs2.magic1, hs2.enet, hs2.magic2) != (0x145, 1234567890, 0x14514545):
+        if (hs2.magic1, hs2.magic2) != (0x145, 0x14514545):
             self.sock.close()
             return False
 
@@ -78,7 +78,7 @@ class KcpSocket:
         hs1 = Handshake.parse(data)
         logger.debug('[C] handshake received')
 
-        if (hs1.magic1, hs1.enet, hs1.magic2) != (0xff, 1234567890, 0xffffffff):
+        if (hs1.magic1, hs1.magic2) != (0xff, 0xffffffff):
             self.sock.close()
             return False
 

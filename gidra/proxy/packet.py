@@ -7,7 +7,7 @@ from gidra.proxy.cmdids import CmdID
 from gidra.reader import BinaryReader
 
 
-PACKET_MAGIC = (0x4567, 0x89ab)
+PACKET_MAGIC = (0x01234567, 0x89abcdef)
 
 
 class Packet:
@@ -23,7 +23,7 @@ class Packet:
     def parse(self, data: bytes) -> Packet:
         buf = BinaryReader(data)
 
-        magic1 = buf.read_u16b()
+        magic1 = buf.read_u32b()
         if magic1 != PACKET_MAGIC[0]:
             raise Exception
 
@@ -36,7 +36,7 @@ class Packet:
         proto_class = getattr(proto, self.cmdid.name, None)
         self.body = proto_class().parse(buf.read(data_len))
 
-        magic2 = buf.read_u16b()
+        magic2 = buf.read_u32b()
         if magic2 != PACKET_MAGIC[1]:
             raise Exception
 
@@ -51,7 +51,7 @@ class Packet:
 
         buf = BinaryReader()
 
-        buf.write_u16b(PACKET_MAGIC[0])
+        buf.write_u32b(PACKET_MAGIC[0])
         buf.write_u16b(self.cmdid)
 
         buf.write_u16b(len(head_bytes))
@@ -60,6 +60,6 @@ class Packet:
         buf.write(head_bytes)
         buf.write(body_bytes)
 
-        buf.write_u16b(PACKET_MAGIC[1])
+        buf.write_u32b(PACKET_MAGIC[1])
 
         return buf.getvalue()
